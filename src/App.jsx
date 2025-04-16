@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import User from "./components/User";
 import UserList from "./components/UserList";
+import toast from "react-hot-toast";
+
 
 function App() {
   const [userList, setUserList] = useState([]);
@@ -24,6 +26,7 @@ function App() {
       };
       setUserList(updatedList);
       localStorage.setItem("userList", JSON.stringify(updatedList));
+      toast.success('User Edited Successfully')
       setEditingIndex(null);
     } 
 
@@ -31,6 +34,7 @@ function App() {
       const updatedList = [...userList, newUser];
       setUserList(updatedList);
       localStorage.setItem("userList", JSON.stringify(updatedList));
+      toast.success('User Created Successfully')
     }
   };
 
@@ -38,6 +42,7 @@ function App() {
     const updatedList = userList.filter((_, index) => index !== indexToDelete);
     setUserList(updatedList);
     localStorage.setItem("userList", JSON.stringify(updatedList));
+    toast.success('User deleted Successfully')
   };
 
   const editHandle = (indexToEdit) => {

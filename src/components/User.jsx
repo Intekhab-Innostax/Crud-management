@@ -1,51 +1,75 @@
 import React, { useState } from "react";
 import { useFormik } from "formik";
+import * as Yup from "yup";
 
 const User = ({ onAddUser, userToEdit }) => {
-  console.log(userToEdit)
+
+  const [errors,setErrors] = useState({});
+
   const initialValues = userToEdit || {
     name: "",
     age: "",
     role: "member",
   };
 
-  const validate = (values) => {
-    let errors = {};
+  const UserSchema = Yup.object().shape({
+    name: Yup.string().min(2, "Too Short!").required("Required"),
+    age: Yup.number()
+      .typeError("Age must be a number")
+      .min(18, "You must be atleast 18 years old")
+      .max(100, "You cannot be older than 100 years")
+      .required("Required"),
+  });
 
-    if (!values.name) {
-      errors.name = "Required";
+  // const validate = (values) => {
+  //   let errors = {};
+
+  //   if (!values.name) {
+  //     errors.name = "Required";
+  //   }
+
+  //   if (!values.age) {
+  //     errors.age = "Required";
+  //   } else if (values.age < 0 || values.age > 120) {
+  //     errors.age = "Invalid Age";
+  //   }
+
+  //   if (!values.role) {
+  //     errors.role = "Required";
+  //   }
+
+  //   return errors;
+  // };
+
+  const onSubmit = async (values, { resetForm }) => {
+    try {
+      await UserSchema.validate(values, { abortEarly: false });
+      console.log("form submit", values);
+      const timestamp = new Date().toISOString();
+
+      const newUser = {
+        ...values,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+      console.log("form data", newUser);
+      onAddUser(newUser);
+      resetForm();
+      setErrors({})
+    } catch (error) {
+      const newErrors = {}
+
+      error.inner.forEach((err) => {
+        newErrors[err.path] = err.message;
+      })
+
+      setErrors(newErrors)
     }
-
-    if (!values.age) {
-      errors.age = "Required";
-    } else if (values.age < 0 || values.age > 120) {
-      errors.age = "Invalid Age";
-    }
-
-    if (!values.role) {
-      errors.role = "Required";
-    }
-
-    return errors;
-  };
-
-  const onSubmit = (values, { resetForm }) => {
-    const timestamp = new Date().toISOString();
-
-    const newUser = {
-      ...values,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-    console.log("form data", newUser);
-    onAddUser(newUser);
-    resetForm();
   };
 
   const formik = useFormik({
     initialValues,
     onSubmit,
-    validate,
     enableReinitialize: true,
   });
 
@@ -66,11 +90,10 @@ const User = ({ onAddUser, userToEdit }) => {
             value={formik.values.name}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
-            required
             className="rounded-md text-[1rem] p-1 bg-white"
           />
-          {formik.touched.name && formik.errors.name && (
-            <div className="text-red-500 text-sm">{formik.errors.name}</div>
+          {errors.name && (
+            <div className="text-red-500 text-sm">{errors.name}</div>
           )}
         </div>
 
@@ -79,17 +102,18 @@ const User = ({ onAddUser, userToEdit }) => {
             Age:
           </label>
           <input
-            type="text"
+            type="number"
             id="age"
             name="age"
+            minLength={0}
+            maxLength={2}
             value={formik.values.age}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
-            required
             className="rounded-md text-[1rem] p-1 bg-white"
           />
-          {formik.touched.age && formik.errors.age && (
-            <div className="text-red-500 text-sm">{formik.errors.age}</div>
+          {errors.age && (
+            <div className="text-red-500 text-sm">{errors.age}</div>
           )}
         </div>
 
@@ -109,21 +133,23 @@ const User = ({ onAddUser, userToEdit }) => {
             <option value="Lead">Lead</option>
             <option value="Manager">Manager</option>
           </select>
-          {formik.errors.role ? (
-            <div className="text-red-500">{formik.errors.role}</div>
-          ) : null}
+          {errors.role && (
+            <div className="text-red-500">{errors.role}</div>
+          )}
         </div>
 
         <div className="flex gap-4">
-        <button
-          className="w-20 bg-cyan-700 text-lime-200 rounded-md mt-4 py-1"
-          type="submit"
-        >
-          Submit
-        </button>
-        {
-          userToEdit ? <button className="w-20 bg-cyan-700 text-lime-200 rounded-md mt-4 py-1">Cancel</button> : null
-        }
+          <button
+            className="w-20 bg-cyan-700 text-lime-200 rounded-md mt-4 py-1"
+            type="submit"
+          >
+            Submit
+          </button>
+          {userToEdit ? (
+            <button className="w-20 bg-cyan-700 text-lime-200 rounded-md mt-4 py-1">
+              Cancel
+            </button>
+          ) : null}
         </div>
       </form>
     </div>
