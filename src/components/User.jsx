@@ -1,10 +1,14 @@
 import React, { useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import { useDispatch } from "react-redux";
+import { addUser, editUser } from "../store/userSlice";
+import { v4 as uuidv4 } from "uuid";
+import toast from "react-hot-toast";
 
-const User = ({ onAddUser, userToEdit }) => {
-
-  const [errors,setErrors] = useState({});
+const User = ({setEditingIndex, userToEdit}) => {
+  const [errors, setErrors] = useState({});
+  const dispatch = useDispatch();
 
   const initialValues = userToEdit || {
     name: "",
@@ -21,26 +25,6 @@ const User = ({ onAddUser, userToEdit }) => {
       .required("Required"),
   });
 
-  // const validate = (values) => {
-  //   let errors = {};
-
-  //   if (!values.name) {
-  //     errors.name = "Required";
-  //   }
-
-  //   if (!values.age) {
-  //     errors.age = "Required";
-  //   } else if (values.age < 0 || values.age > 120) {
-  //     errors.age = "Invalid Age";
-  //   }
-
-  //   if (!values.role) {
-  //     errors.role = "Required";
-  //   }
-
-  //   return errors;
-  // };
-
   const onSubmit = async (values, { resetForm }) => {
     try {
       await UserSchema.validate(values, { abortEarly: false });
@@ -49,21 +33,27 @@ const User = ({ onAddUser, userToEdit }) => {
 
       const newUser = {
         ...values,
+        id: userToEdit ? userToEdit.id : uuidv4(),
         createdAt: timestamp,
         updatedAt: timestamp,
       };
-      console.log("form data", newUser);
-      onAddUser(newUser);
+
+
+      {
+        userToEdit ? dispatch(editUser(newUser)) : dispatch(addUser(newUser));
+      }
+      setEditingIndex(null);
       resetForm();
-      setErrors({})
+      console.log("form data after", newUser);
+      setErrors({});
     } catch (error) {
-      const newErrors = {}
+      const newErrors = {};
 
       error.inner.forEach((err) => {
         newErrors[err.path] = err.message;
-      })
+      });
 
-      setErrors(newErrors)
+      setErrors(newErrors);
     }
   };
 
@@ -72,6 +62,11 @@ const User = ({ onAddUser, userToEdit }) => {
     onSubmit,
     enableReinitialize: true,
   });
+
+  const cancelHandler=()=> {
+    setEditingIndex(null)
+    toast.error("Cancel Edit")
+  }
 
   return (
     <div className="w-full flex justify-center mt-8">
@@ -133,9 +128,7 @@ const User = ({ onAddUser, userToEdit }) => {
             <option value="Lead">Lead</option>
             <option value="Manager">Manager</option>
           </select>
-          {errors.role && (
-            <div className="text-red-500">{errors.role}</div>
-          )}
+          {errors.role && <div className="text-red-500">{errors.role}</div>}
         </div>
 
         <div className="flex gap-4">
@@ -146,7 +139,11 @@ const User = ({ onAddUser, userToEdit }) => {
             Submit
           </button>
           {userToEdit ? (
-            <button className="w-20 bg-cyan-700 text-lime-200 rounded-md mt-4 py-1">
+            <button
+              type="button"
+              onClick={cancelHandler}
+              className="w-20 bg-cyan-700 text-lime-200 rounded-md mt-4 py-1"
+            >
               Cancel
             </button>
           ) : null}
